@@ -28,3 +28,6 @@ go.work.sum
 __*
 
 app_data
+
+# vscode
+.vscode

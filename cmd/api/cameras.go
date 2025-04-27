@@ -7,12 +7,14 @@ import (
 
 	"github.com/chefgoldbloom/devicemanager/internal/data"
 	"github.com/chefgoldbloom/devicemanager/internal/validator"
+	"github.com/lib/pq"
 )
 
 // createCameraHandler handles the creation of a new camera by decoding the request body
 // and returning the parsed input as a response.
 func (app *application) createCameraHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
+		IpAddress  string `json:"ip_address"`
 		MacAddress string `json:"mac_address"`
 		Model      string `json:"model"`
 		Firmware   string `json:"firmware"`
@@ -26,6 +28,7 @@ func (app *application) createCameraHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	camera := &data.Camera{
+		IpAddress:  input.IpAddress,
 		MacAddress: input.MacAddress,
 		Model:      input.Model,
 		Firmware:   input.Firmware,
@@ -40,7 +43,24 @@ func (app *application) createCameraHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
+	err = app.models.Cameras.Insert(camera)
+	if err != nil {
+		if pgErr, ok := err.(*pq.Error); ok {
+			app.postgresError(w, r, pgErr)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// Send location of newly created resource
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/cameras/%d", camera.ID))
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"camera": camera}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 func (app *application) showCameraHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +73,7 @@ func (app *application) showCameraHandler(w http.ResponseWriter, r *http.Request
 	camera := data.Camera{
 		ID:         id,
 		CreatedAt:  time.Now(),
+		IpAddress:  "192.168.90.1",
 		MacAddress: "ACCC12345678",
 		Model:      "P1234-VE",
 		Firmware:   "1.2.3",

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/lib/pq"
 )
 
 // The logError() method is a generic helper for logging an error message along
@@ -64,4 +66,8 @@ func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Reques
 
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
+}
+
+func (app *application) postgresError(w http.ResponseWriter, r *http.Request, pgErr *pq.Error) {
+	app.errorResponse(w, r, http.StatusBadRequest, pgErr.Message)
 }
