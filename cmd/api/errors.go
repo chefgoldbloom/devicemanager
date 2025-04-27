@@ -68,6 +68,6 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
 
-func (app *application) postgresError(w http.ResponseWriter, r *http.Request, pgErr *pq.Error) {
+func (app *application) postgresErrorResponse(w http.ResponseWriter, r *http.Request, pgErr *pq.Error) {
 	app.errorResponse(w, r, http.StatusBadRequest, pgErr.Message)
 }
